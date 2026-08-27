@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import TaskCard from '../components/TaskCard';
 
 export default function AddTaskScreen() {
@@ -26,11 +27,28 @@ export default function AddTaskScreen() {
     setTaskText('');
   };
 
+  const deleteTask = (id) => {
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+  };
+
   const toggleDone = (id) => {
     setTasks((prev) =>
       prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t))
     );
   };
+
+  const renderRightActions = useCallback(
+    (item) =>
+      () => (
+        <TouchableOpacity
+          style={styles.deleteBtn}
+          onPress={() => deleteTask(item.id)}
+        >
+          <Text style={styles.deleteBtnText}>Delete</Text>
+        </TouchableOpacity>
+      ),
+    []
+  );
 
   return (
     <View style={styles.container}>
@@ -58,9 +76,11 @@ export default function AddTaskScreen() {
         data={tasks}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => toggleDone(item.id)}>
-            <TaskCard title={item.title} done={item.done} />
-          </TouchableOpacity>
+          <Swipeable renderRightActions={renderRightActions(item)}>
+            <TouchableOpacity onPress={() => toggleDone(item.id)}>
+              <TaskCard title={item.title} done={item.done} />
+            </TouchableOpacity>
+          </Swipeable>
         )}
         ListEmptyComponent={
           <Text style={styles.empty}>No tasks yet — add one above!</Text>
@@ -99,4 +119,14 @@ const styles = StyleSheet.create({
   },
   addBtnText: { color: '#FFFFFF', fontSize: 24, fontWeight: 'bold' },
   empty: { textAlign: 'center', color: '#9FB0D0', marginTop: 32 },
+  deleteBtn: {
+    backgroundColor: '#E74C3C',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    borderRadius: 8,
+    marginVertical: 6,
+    marginLeft: 8,
+  },
+  deleteBtnText: { color: '#FFFFFF', fontWeight: '600', fontSize: 14 },
 });
