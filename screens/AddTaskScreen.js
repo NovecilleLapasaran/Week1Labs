@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, FlatList, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Button, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import TaskCard from '../components/TaskCard';
 
@@ -67,6 +68,10 @@ export default function AddTaskScreen() {
     );
   }
 
+  function handleDeleteTask(id) {
+    setTasks(tasks.filter((t) => t.id !== id));
+  }
+
   function handleRefreshQuote() {
     fetch('https://api.quotable.io/random')
       .then((response) => response.json())
@@ -99,11 +104,22 @@ export default function AddTaskScreen() {
         data={tasks}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <TaskCard
-            title={item.title}
-            done={item.done}
-            onToggle={() => handleToggleTask(item.id)}
-          />
+          <Swipeable
+            renderRightActions={() => (
+              <TouchableOpacity
+                style={styles.deleteBtn}
+                onPress={() => handleDeleteTask(item.id)}
+              >
+                <Text style={styles.deleteBtnText}>Delete</Text>
+              </TouchableOpacity>
+            )}
+          >
+            <TaskCard
+              title={item.title}
+              done={item.done}
+              onToggle={() => handleToggleTask(item.id)}
+            />
+          </Swipeable>
         )}
         ListEmptyComponent={
           <Text style={styles.empty}>No tasks yet — add one above! 👆</Text>
@@ -139,6 +155,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginVertical: 12,
   },
+  deleteBtn: {
+    backgroundColor: '#E74C3C',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    borderRadius: 8,
+    marginVertical: 6,
+    marginLeft: 8,
+  },
+  deleteBtnText: { color: '#FFFFFF', fontWeight: '600', fontSize: 14 },
   list: { marginTop: 16 },
   empty: { textAlign: 'center', color: '#6B7280', marginTop: 24 },
   separator: { height: 8 },
