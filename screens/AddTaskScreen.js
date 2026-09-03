@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, Pressable, FlatList, StyleSheet } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 import TaskCard from '../components/TaskCard';
+import { colors } from '../theme';
 
 export default function AddTaskScreen() {
   const [taskText, setTaskText] = useState('');
@@ -41,12 +43,16 @@ export default function AddTaskScreen() {
     saveTasks();
   }, [tasks, isLoaded]);
 
+  function loadQuote() {
+    fetch('https://dummyjson.com/quotes/random')
+      .then((response) => response.json())
+      .then((data) => setQuote(`"${data.quote}" — ${data.author}`))
+      .catch(() => setQuote('Believe in yourself and get it done!'));
+  }
+
   // Fetch a motivational quote once, when the screen first mounts
   useEffect(() => {
-    fetch('https://api.quotable.io/random')
-      .then((response) => response.json())
-      .then((data) => setQuote(data.content))
-      .catch(() => setQuote('Believe in yourself and get it done!'));
+    loadQuote();
   }, []);
 
   function handleAddTask() {
@@ -73,14 +79,15 @@ export default function AddTaskScreen() {
   }
 
   function handleRefreshQuote() {
-    fetch('https://api.quotable.io/random')
-      .then((response) => response.json())
-      .then((data) => setQuote(data.content));
+    loadQuote();
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.quote}>💬 {quote}</Text>
+      <View style={styles.quoteRow}>
+        <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.gray} />
+        <Text style={styles.quote}>{quote}</Text>
+      </View>
 
       <Text style={styles.heading}>My Tasks</Text>
 
@@ -93,11 +100,28 @@ export default function AddTaskScreen() {
       {errorMessage !== '' && (
         <Text style={styles.error}>{errorMessage}</Text>
       )}
-      <Button title="Add Task" onPress={handleAddTask} />
-      <Button title="New Quote" onPress={handleRefreshQuote} />
+      <View style={styles.buttonRow}>
+        <Pressable
+          style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}
+          onPress={handleAddTask}
+        >
+          <Ionicons name="add-circle" size={20} color={colors.white} />
+          <Text style={styles.addButtonText}>Add Task</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.quoteButton, pressed && styles.pressed]}
+          onPress={handleRefreshQuote}
+        >
+          <Ionicons name="refresh" size={18} color={colors.orange} />
+          <Text style={styles.quoteButtonText}>New Quote</Text>
+        </Pressable>
+      </View>
 
       {tasks.length > 0 && tasks.every((t) => t.done) && (
-        <Text style={styles.celebration}>🎉 All done! Great work!</Text>
+        <View style={styles.celebrationRow}>
+          <Ionicons name="trophy" size={20} color={colors.teal} />
+          <Text style={styles.celebration}>All done! Great work!</Text>
+        </View>
       )}
 
       <FlatList
@@ -105,24 +129,27 @@ export default function AddTaskScreen() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <Swipeable
+            overshootRight={false}
             renderRightActions={() => (
-              <TouchableOpacity
-                style={styles.deleteBtn}
+              <Pressable
+                style={styles.deleteAction}
                 onPress={() => handleDeleteTask(item.id)}
               >
-                <Text style={styles.deleteBtnText}>Delete</Text>
-              </TouchableOpacity>
+                <Ionicons name="trash" size={22} color={colors.white} />
+                <Text style={styles.deleteActionText}>Delete</Text>
+              </Pressable>
             )}
           >
             <TaskCard
               title={item.title}
               done={item.done}
               onToggle={() => handleToggleTask(item.id)}
+              onDelete={() => handleDeleteTask(item.id)}
             />
           </Swipeable>
         )}
         ListEmptyComponent={
-          <Text style={styles.empty}>No tasks yet — add one above! 👆</Text>
+          <Text style={styles.empty}>No tasks yet — add one above!</Text>
         }
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         style={styles.list}
@@ -133,39 +160,71 @@ export default function AddTaskScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
-  heading: { fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
+  heading: { fontSize: 20, fontWeight: 'bold', color: colors.navy, marginBottom: 12 },
+  quoteRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
   quote: {
+    flex: 1,
     fontStyle: 'italic',
-    color: '#6B7280',
-    marginBottom: 16,
+    color: colors.gray,
     textAlign: 'center',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 10,
     marginBottom: 10,
   },
-  error: { color: '#B23A48', marginBottom: 10 },
+  error: { color: colors.red, marginBottom: 10 },
+  buttonRow: { flexDirection: 'row', gap: 10, marginBottom: 4 },
+  addButton: {
+    flex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: colors.teal,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  addButtonText: { color: colors.white, fontSize: 16, fontWeight: '600' },
+  quoteButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1.5,
+    borderColor: colors.orange,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  quoteButtonText: { color: colors.orange, fontSize: 16, fontWeight: '600' },
+  pressed: { opacity: 0.8 },
+  deleteAction: {
+    backgroundColor: colors.red,
+    width: 92,
+    borderRadius: 8,
+    marginVertical: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  deleteActionText: { color: colors.white, fontWeight: '600', fontSize: 13 },
+  celebrationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginVertical: 12,
+  },
   celebration: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#1E8A7A',
+    color: colors.teal,
     textAlign: 'center',
-    marginVertical: 12,
   },
-  deleteBtn: {
-    backgroundColor: '#E74C3C',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 80,
-    borderRadius: 8,
-    marginVertical: 6,
-    marginLeft: 8,
-  },
-  deleteBtnText: { color: '#FFFFFF', fontWeight: '600', fontSize: 14 },
   list: { marginTop: 16 },
-  empty: { textAlign: 'center', color: '#6B7280', marginTop: 24 },
+  empty: { textAlign: 'center', color: colors.gray, marginTop: 24 },
   separator: { height: 8 },
 });
