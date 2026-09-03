@@ -8,6 +8,7 @@ export default function AddTaskScreen() {
   const [tasks, setTasks] = useState([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
+  const [quote, setQuote] = useState("Loading today's motivation...");
 
   // Load saved tasks once, when the screen first mounts
   useEffect(() => {
@@ -39,6 +40,14 @@ export default function AddTaskScreen() {
     saveTasks();
   }, [tasks, isLoaded]);
 
+  // Fetch a motivational quote once, when the screen first mounts
+  useEffect(() => {
+    fetch('https://api.quotable.io/random')
+      .then((response) => response.json())
+      .then((data) => setQuote(data.content))
+      .catch(() => setQuote('Believe in yourself and get it done!'));
+  }, []);
+
   function handleAddTask() {
     if (taskText.trim() === '') {
       setErrorMessage('Please type a task before adding it.');
@@ -58,8 +67,16 @@ export default function AddTaskScreen() {
     );
   }
 
+  function handleRefreshQuote() {
+    fetch('https://api.quotable.io/random')
+      .then((response) => response.json())
+      .then((data) => setQuote(data.content));
+  }
+
   return (
     <View style={styles.container}>
+      <Text style={styles.quote}>💬 {quote}</Text>
+
       <Text style={styles.heading}>My Tasks</Text>
 
       <TextInput
@@ -72,6 +89,7 @@ export default function AddTaskScreen() {
         <Text style={styles.error}>{errorMessage}</Text>
       )}
       <Button title="Add Task" onPress={handleAddTask} />
+      <Button title="New Quote" onPress={handleRefreshQuote} />
 
       {tasks.length > 0 && tasks.every((t) => t.done) && (
         <Text style={styles.celebration}>🎉 All done! Great work!</Text>
@@ -100,6 +118,12 @@ export default function AddTaskScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
   heading: { fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
+  quote: {
+    fontStyle: 'italic',
+    color: '#6B7280',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
   input: {
     borderWidth: 1,
     borderColor: '#CBD5E1',
